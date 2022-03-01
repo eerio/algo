@@ -55,7 +55,7 @@ void println(Args ... args) { print(args...); std::cout << '\n'; }
 
 using namespace std;
 using ll = long long int;
-using ull = unsigned ll;
+using ull = unsigned long long int;
 
 // uncomment to fix seed for reproducibility / execution time
 #define FIX_RNGSEED
