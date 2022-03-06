@@ -1,0 +1,134 @@
+#include <algorithm>
+#include <bitset>
+#include <iostream>
+#include <cassert>
+#include <climits>
+#include <random>
+#include <list>
+#include <vector>
+#include <utility>
+#include <queue>
+#include <set>
+#include <stack>
+#include <map>
+#include <string>
+
+#define FOR(i, a, b) for (decltype(b) i=(a); i < (b); ++i)
+#define REP(i, n) for (decltype(n) i=0; i < (n); ++i)
+#define mod 1'000'000'007
+
+template<typename u, typename v>
+std::ostream& operator<< (std::ostream& out, const std::pair<u, v>& x) {
+  out << '<' << x.first << ", " << x.second << '>';
+  return out;
+}
+
+// template<typename u>
+// std::ostream& operator<< (std::ostream& out, const std::vector<u>& x) {
+//   out << '[';
+//   if (x.size() > 0) {
+//     for (size_t i=0; i < x.size() - 1; ++i) { out << x[i] << ", "; }
+//     out << x[x.size() - 1];
+//   }
+//   out << ']';
+//   return out;
+// }
+
+template<typename u>
+std::ostream& operator<< (std::ostream& out, const std::vector<u>& x) {
+  // out << '[';
+  if (x.size() > 0) {
+    for (size_t i=0; i < x.size() - 1; ++i) { out << x[i] << ""; }
+    out << x[x.size() - 1];
+  }
+  // out << ']';
+  return out;
+}
+
+template<typename u, typename v>
+std::ostream& operator<< (std::ostream& out, const std::map<u, v>& x) {
+  out << '{';
+  if (x.size() > 0) {
+    for (auto it=x.begin(); it != prev(x.end()); ++it) {
+      out << it->first << ": " << it->second << ", ";
+    }
+    auto it = std::prev(x.end());
+    out << it->first << ": " << it->second;
+  }
+  out << '}';
+  return out;
+}
+
+template<typename ... Args>
+void print(Args ... args) { ((std::cout << args << ' '), ...); }
+
+template<typename ... Args>
+void println(Args ... args) { print(args...); std::cout << '\n'; }
+
+using namespace std;
+using ll = long long int;
+using ull = unsigned long long int;
+
+// uncomment to fix seed for reproducibility / execution time
+#define FIX_RNGSEED
+#ifdef FIX_RNGSEED
+  mt19937_64 mt(42);
+#else
+  random_device real_rnd;
+  mt19937_64 mt(real_rnd());
+#endif
+
+// return from uniform distribution on [l, r]
+int randint(int l, int r) { uniform_int_distribution<int> dist (l, r); return dist(mt); }
+
+std::vector<std::vector<bool>> gray(int n) {
+  if (n == 1) { return {{0}, {1}}; }
+
+  std::vector<std::vector<bool>> prev = gray(n - 1);
+  std::vector<std::vector<bool>> result;
+
+  for (std::vector<bool>& v : prev) {
+    v.insert(v.begin(), 0);
+    result.push_back(v);
+  }
+
+  for (auto it = prev.rbegin(); it != prev.rend(); ++it) {
+    auto v = *it;
+    v[0] = 1;
+    result.push_back(v);
+  }
+
+  return result;
+}
+
+int other(int peg1, int peg2) {
+    int x = 14 & ~(1 << peg1) & ~(1 << peg2);
+    switch (x) {
+        case 2: return 1;
+        case 4: return 2;
+        case 8: return 3;
+    }
+
+    throw exception();
+    return -1;
+}
+
+void hanoi(int from, int to, int n) {
+    if (n == 0) { return; }
+    hanoi(from, other(from, to), n-1);
+    println(from, to);
+    hanoi(other(from, to), to, n-1);
+}
+
+int main() {
+  ios_base::sync_with_stdio(false);
+  cin.tie(nullptr);
+
+  int n;
+  cin >> n;
+
+  println((1 << n) - 1);
+  hanoi(1, 3, n);
+
+  return 0;
+}
