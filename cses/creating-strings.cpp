@@ -81,43 +81,24 @@ using ull = unsigned long long int;
 // return from uniform distribution on [l, r]
 int randint(int l, int r) { uniform_int_distribution<int> dist (l, r); return dist(mt); }
 
-std::vector<std::vector<bool>> gray(int n) {
-  if (n == 1) { return {{0}, {1}}; }
-
-  std::vector<std::vector<bool>> prev = gray(n - 1);
-  std::vector<std::vector<bool>> result;
-
-  for (std::vector<bool>& v : prev) {
-    v.insert(v.begin(), 0);
-    result.push_back(v);
-  }
-
-  for (auto it = prev.rbegin(); it != prev.rend(); ++it) {
-    auto v = *it;
-    v[0] = 1;
-    result.push_back(v);
-  }
-
-  return result;
-}
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
 
-  int n;
-  cin >> n;
+  string s;
+  cin >> s;
 
-  for (int i=0; i < (1 << n); ++i) {
-    int gray = i ^ (i >> 1);
-    for (int j=0; j < n; ++j) {
-      printf(
-        "%d",
-        (gray & (1 << (n - 1 - j))) >> (n - 1 - j)
-      );
-    }
-    putchar('\n');
-  }
+  sort(s.begin(), s.end());
+  string result;
+  int cnt = 0;
+  do {
+    cnt++;
+    result += s + '\n';
+  } while (next_permutation(s.begin(), s.end()));
+
+  println(cnt);
+  println(result);
 
   return 0;
 }
