@@ -78,19 +78,15 @@ int main() {
   int n;
   cin >> n;
 
-  vector<ull> p;
+  vector<int> p;
   REP(i, n) { ull t; cin >> t; p.push_back(t); }
 
   sort(p.begin(), p.end());
 
-  ull pref[n];
-  pref[0] = p[0];
-  FOR(i, 1, n) { pref[i] = pref[i-1] + p[i]; }
-
-  int i = n % 2 == 0 ? n/2-1 : n/2;
-
-  println(pref[n - 1] - pref[i] - pref[i - 1] + p[i] * (i - n + i + 1));
-
+  int median = p[n / 2];
+  ull result=0;
+  for (auto x : p) { result += abs(x - median); }
+  println(result);
 
   return 0;
 }
