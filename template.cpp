@@ -15,35 +15,38 @@
 
 #define FOR(i, a, b) for (decltype(b) i=(a); i < (b); ++i)
 #define REP(i, n) for (decltype(n) i=0; i < (n); ++i)
+#define mod 1'000'000'007
 
-template<typename u, typename v>
-std::ostream& operator<< (std::ostream& out, const std::pair<u, v>& x) {
-  out << '<' << x.first << ", " << x.second << '>';
-  return out;
+template<typename U, typename V>
+std::ostream& operator<< (std::ostream& out, std::pair<U, V> x) {
+  return out << '<' << x.first << ", " << x.second << '>';
 }
 
-template<typename u>
-std::ostream& operator<< (std::ostream& out, const std::vector<u>& x) {
-  out << '[';
-  if (x.size() > 0) {
-    for (size_t i=0; i < x.size() - 1; ++i) { out << x[i] << ", "; }
-    out << x[x.size() - 1];
-  }
-  out << ']';
-  return out;
+template<typename ... Ts>
+std::ostream& operator<< (std::ostream& out, std::tuple<Ts ...> x) {
+  out << '{';
+  auto printer = [&out](auto&& first, auto&& ... args) {
+    out << first;
+    ((out << ' ' << args), ...);
+  };
+  std::apply(printer, x);
+  return out << '}';
 }
 
-template<typename u, typename v>
-std::ostream& operator<< (std::ostream& out, const std::map<u, v>& x) {
+template<typename T>
+auto operator<< (std::ostream& out, T x) -> decltype(x.end(), out) {
   out << '{';
   if (x.size() > 0) {
-    for (auto it=x.begin(); it != prev(x.end()); ++it) {
-      out << it->first << ": " << it->second << ", ";
+    for (typename T::iterator it=x.begin(); it != std::prev(x.end()); ++it) {
+      out << *it << ", ";
     }
-    auto it = std::prev(x.end());
-    out << it->first << ": " << it->second;
+    out << *std::prev(x.end());
   }
-  out << '}';
+  return out << '}';
+}
+
+std::ostream& operator<< (std::ostream& out, std::string x) {
+  for (auto c: x) { out << c; }
   return out;
 }
 
@@ -62,6 +65,7 @@ using ull = unsigned long long int;
 #ifdef FIX_RNGSEED
   mt19937_64 mt(42);
 #else
+// this doesn't work in CSES' online judge
   random_device real_rnd;
   mt19937_64 mt(real_rnd());
 #endif
@@ -71,16 +75,20 @@ int randint(int l, int r) { uniform_int_distribution<int> dist (l, r); return di
 
 int main() {
   ios_base::sync_with_stdio(false);
-	cin.tie(nullptr);
+  cin.tie(nullptr);
 
+  /*
   pair<int, char> p {2137, '*'};
   vector<int> t {1, 2, 3};
   map<char, string> s {{'r', "raban"}, {'b', "balagan"}, {'t', "tygrys"}};
   println(1, 2, "pawel", 4.5f, 4.5, t, p, vector<char>(), map<int,int>(), s);
 
   vector<int> v (50);
+  tuple<int, string, long double> mytuple {17, "siedemnascie", 17.9};
+  println(mytuple);
   generate(v.begin(), v.end(), [] { return randint(-1,0); });
   println(v);
+  */
 
   return 0;
 }
