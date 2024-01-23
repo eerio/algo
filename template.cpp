@@ -50,8 +50,11 @@ std::ostream& operator<< (std::ostream& out, std::string x) {
   return out;
 }
 
-template<typename ... Args>
-void print(Args ... args) { ((std::cout << args << ' '), ...); }
+template<typename U, typename ... Args>
+void print(U fst, Args ... args) {
+  std::cout << fst;
+  ((std::cout << ' ' << args), ...);
+}
 
 template<typename ... Args>
 void println(Args ... args) { print(args...); std::cout << '\n'; }
