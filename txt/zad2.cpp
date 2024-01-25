@@ -220,6 +220,58 @@ vector<size_t> get_suffix_array(const string& s) {
   return result;
 }
 
+
+vector<int> sort_cyclic_shifts(string const& s) {
+    int n = s.size();
+    const int alphabet = 256;
+    vector<int> p(n), c(n), cnt(max(alphabet, n), 0);
+    for (int i = 0; i < n; i++)
+        cnt[s[i]]++;
+    for (int i = 1; i < alphabet; i++)
+        cnt[i] += cnt[i-1];
+    for (int i = 0; i < n; i++)
+        p[--cnt[s[i]]] = i;
+    c[p[0]] = 0;
+    int classes = 1;
+    for (int i = 1; i < n; i++) {
+        if (s[p[i]] != s[p[i-1]])
+            classes++;
+        c[p[i]] = classes - 1;
+    }
+    vector<int> pn(n), cn(n);
+    for (int h = 0; (1 << h) < n; ++h) {
+        for (int i = 0; i < n; i++) {
+            pn[i] = p[i] - (1 << h);
+            if (pn[i] < 0)
+                pn[i] += n;
+        }
+        fill(cnt.begin(), cnt.begin() + classes, 0);
+        for (int i = 0; i < n; i++)
+            cnt[c[pn[i]]]++;
+        for (int i = 1; i < classes; i++)
+            cnt[i] += cnt[i-1];
+        for (int i = n-1; i >= 0; i--)
+            p[--cnt[c[pn[i]]]] = pn[i];
+        cn[p[0]] = 0;
+        classes = 1;
+        for (int i = 1; i < n; i++) {
+            pair<int, int> cur = {c[p[i]], c[(p[i] + (1 << h)) % n]};
+            pair<int, int> prev = {c[p[i-1]], c[(p[i-1] + (1 << h)) % n]};
+            if (cur != prev)
+                ++classes;
+            cn[p[i]] = classes - 1;
+        }
+        c.swap(cn);
+    }
+    return p;
+}
+
+vector<int> get_suffix_array2(const string& s) {
+  vector<int> sorted_shifts = sort_cyclic_shifts(s);
+  //sorted_shifts.erase(sorted_shifts.begin());
+  return sorted_shifts;
+}
+
 vector<size_t> get_lcp_array(const string& s, const vector<size_t>& sa) {
   vector<size_t> result;
   for (size_t i=0; i < sa.size() - 1; ++i) {
@@ -238,6 +290,24 @@ vector<size_t> get_lcp_array(const string& s, const vector<size_t>& sa) {
   return result;
 }
 
+vector<size_t> get_lcp_array2(const string& s, const vector<int>& sa)
+{
+    int n=s.size(),k=0;
+    vector<size_t> lcp(n,0);
+    vector<size_t> rank(n,0);
+
+    for(int i=0; i<n; i++) rank[sa[i]]=i;
+
+    for(int i=0; i<n; i++, k?k--:0)
+    {
+        if(rank[i]==n-1) {k=0; continue;}
+        int j=sa[rank[i]+1];
+        while(i+k<n && j+k<n && s[i+k]==s[j+k]) k++;
+        lcp[rank[i]]=k;
+    }
+    lcp.pop_back();
+    return lcp;
+}
 
 int main() {
   ios_base::sync_with_stdio(false);
@@ -258,8 +328,35 @@ int main() {
   */
 
 
-  auto sa = get_suffix_array(s);
-  auto lcp = get_lcp_array(s, sa);
+  auto sa = get_suffix_array2(s);
+  
+  /*
+  auto saMine = get_suffix_array(s);
+  println(sa, saMine);
+  cout << endl;
+  assert(saMine.size() == s.size());
+  assert(sa.size() == s.size());
+  for (int i=0; i < sa.size(); ++i) {
+    assert (sa[i] == saMine[i]);
+  }
+  */
+
+
+  auto lcp = get_lcp_array2(s, sa);
+
+  /*
+  auto lcpMine = get_lcp_array(s, sa);
+  println(lcp, lcpMine);
+  cout << endl;
+  assert(lcpMine.size() == sa.size() - 1);
+  assert(lcp.size() == sa.size() - 1);
+  assert (lcpMine.size() == lcp.size());
+  for (int i=0; i < lcp.size(); ++i) {
+    assert (lcp[i] == lcpMine[i]);
+  }
+  */
+
+
   size_t MOD = 1000000007;
 
   size_t end1 = s1.size();
