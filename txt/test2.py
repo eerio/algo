@@ -30,10 +30,16 @@ with open('input.in', 'w+') as doc:
     ]:
         test(doc, inp)
     size = 10
-    for size, ntests in [(10, 100000)]:
+    for size, ntests in [(30, 100000)]:
         for i in range(ntests):
             print(i, end='\r')
-            inp = ''.join(random.choices(string.ascii_uppercase, k=size))
+            inp = ''
+            inp += ''.join(random.choices(string.ascii_lowercase, k=size))
+            inp += '\n'
+            inp += ''.join(random.choices(string.ascii_lowercase, k=size))
+            inp += '\n'
+            inp += ''.join(random.choices(string.ascii_lowercase, k=size))
+            inp += '\n'
             test(doc, inp)
 
 print()

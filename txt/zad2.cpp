@@ -100,7 +100,6 @@ struct SuffixTree {
   vector<unsigned long long int > sums;
 
   void set_num_sentinels(int i) {
-    println("set num sentinels:", i);
     if (sons[i].empty()) {
       int from = up_edge_range[i].first;
 
@@ -109,6 +108,8 @@ struct SuffixTree {
       if (from <= sentinel_pos[1]) { n_sent++; }
       if (from <= sentinel_pos[0]) { n_sent++; }
       num_sentinels_below[i][n_sent] = 1;
+      print("set num sentinels:", i, "= ");
+      println(num_sentinels_below[i]);
       return;
     } 
     
@@ -121,6 +122,8 @@ struct SuffixTree {
         num_sentinels_below[i][n_sent]+=num_sentinels_below[child][n_sent];
       }
     }
+    print("set num sentinels:", i, "= ");
+    println(num_sentinels_below[i]);
    
     sums[i] = num_sentinels_below[i][1] * num_sentinels_below[i][2] * num_sentinels_below[i][3];
     for (auto [k, child]: sons[i]) {
@@ -133,6 +136,9 @@ struct SuffixTree {
   void solve() {
     set_num_sentinels(0);
     if (sons[0].empty()) { return; }
+
+    println("sons:", sons);
+    println("sums:", sums);
     int result = 0;
     // length 1
     deque<int> todo;
@@ -202,18 +208,103 @@ suff:
 	}
 };
 
+vector<size_t> get_suffix_array(const string& s) {
+  vector<pair<string, size_t>> suffixes;
+  for (size_t i=0; i < s.size(); ++i) {
+    suffixes.push_back({s.substr(i), i});
+  }
+  sort(suffixes.begin(), suffixes.end());
+  
+  vector<size_t> result;
+  for (auto& [_, i]: suffixes) { result.push_back(i); }
+  return result;
+}
+
+vector<size_t> get_lcp_array(const string& s, const vector<size_t>& sa) {
+  vector<size_t> result;
+  for (size_t i=0; i < sa.size() - 1; ++i) {
+    size_t lcp = 0;
+    while (
+      sa[i] + lcp < s.size()
+      && sa[i + 1] + lcp < s.size()
+      && s[sa[i] + lcp] == s[sa[i + 1] + lcp]
+    ) {
+      ++lcp;
+    }
+
+    result.push_back(lcp);
+  }
+
+  return result;
+}
+
 
 int main() {
   ios_base::sync_with_stdio(false);
   cin.tie(nullptr);
 
   string s1, s2, s3;
-  cin >> s1 >> s2 >> s3; 
+  cin >> s1 >> s2 >> s3;
+
+  size_t min_size = min({s1.size(), s2.size(), s3.size()});
   
   string s = s1 + "1" + s2 + "2" + s3 + "3";
+  //string s;
+  //cin >> s;
+  /*
   auto st = SuffixTree(vector<int>(s.begin(), s.end()), 'z', {s1.size(), s1.size() + 1 + s2.size(), s1.size() + 1 + s2.size() + 1 + s3.size()});
 
   st.solve();
+  */
+
+
+  auto sa = get_suffix_array(s);
+  auto lcp = get_lcp_array(s, sa);
+  size_t MOD = 1000000007;
+
+  size_t end1 = s1.size();
+  size_t end2 = end1 + 1 + s2.size();
+  //println("end1:", end1, "end2:", end2);
+
+  //println(sa);
+  //println(lcp);
+
+  for (size_t L=1; L <= min_size; ++L) {
+    size_t l=0, r=0, result=0;
+    while (l < lcp.size()) {
+      while (l < lcp.size() && lcp[l] < L) { ++l; }
+      if (l == lcp.size()) { continue; }
+      r = l;
+      while (r < lcp.size() && lcp[r] >= L) { ++r; }
+      // lcp[l, r) is a valid range
+      //println("Found range for L =", L, ":", l, r);
+
+      size_t n1=0, n2=0, n3=0;
+      for (size_t i=l; i <= r; ++i) {
+        //println("sa[i]=", sa[i]);
+        if (sa[i] < end1) {
+          //println("s1");
+          ++n1;
+        } else if (end1 < sa[i] && sa[i] < end2) {
+          //println("s2");
+          ++n2;
+        } else if (end2 < sa[i]) {
+          //println("s3");
+          ++n3;
+        }
+      }
+
+      result = (result + n1 * n2 * n3) % MOD;
+
+      l = r;
+    }
+    if (L == 1) {
+      print(result);
+    } else {
+      print("", result);
+    }
+  }
+  println("");
 
   /*
   pair<int, char> p {2137, '*'};
