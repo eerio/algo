@@ -163,7 +163,7 @@ int main() {
   string s = s1 + "1" + s2 + "2" + s3 + "3";
 
   auto sa = get_suffix_array(s);
-  
+  /*
   auto saMine = get_suffix_array_brut(s);
   //println(sa, saMine);
   //cout << endl;
@@ -172,7 +172,7 @@ int main() {
   for (int i=0; i < sa.size(); ++i) {
     assert (sa[i] == saMine[i]);
   }
-  
+  */
   auto lcp = get_lcp_array(s, sa);
 
   /* 
@@ -213,12 +213,42 @@ int main() {
     cnt2.push_back(n2);
     cnt3.push_back(n3);
   }
-/*
-  println(sa);
-  println(cnt1);
-  println(cnt2);
-  println(cnt3);
-*/
+
+  vector<size_t> result (min_size + 1);
+
+  // use the fact that lcp grows at most by 1 each step
+  stack<size_t> prev_ind;
+  size_t prev_lcp = lcp[0];
+  assert (prev_lcp == 0);
+  for (size_t i=1; i <= lcp.size(); ++i) {
+    size_t cur_lcp = i < lcp.size() ? lcp[i] : 0;
+
+    if (cur_lcp >= prev_lcp) {
+      for (size_t j=prev_lcp + 1; j <= cur_lcp; ++j) {
+        prev_ind.push({i});
+      }
+    } else {
+      while (prev_ind.size() > cur_lcp) {
+        auto ind = prev_ind.top();
+        
+        size_t n1 = cnt1[i + 1] - cnt1[ind],
+               n2 = cnt2[i + 1] - cnt2[ind],
+               n3 = cnt3[i + 1] - cnt3[ind];
+        result[prev_ind.size()] = (result[prev_ind.size()]+n1*n2*n3) % MOD;
+        prev_ind.pop();
+      }
+    }
+
+    prev_lcp = cur_lcp;
+  }
+
+  print(result[1]);
+  for (size_t i=2; i < result.size(); ++i) {
+    print("", result[i]);
+  }
+  println("");
+
+  return 0;
   for (size_t L=1; L <= min_size; ++L) {
     size_t l=0, r=0, result=0;
     while (l < lcp.size()) {
