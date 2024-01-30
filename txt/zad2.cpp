@@ -216,26 +216,31 @@ int main() {
 
   vector<size_t> result (min_size + 1);
 
-  // use the fact that lcp grows at most by 1 each step
-  stack<size_t> prev_ind;
+  stack<tuple<size_t, size_t, size_t>> prev_ind;
   size_t prev_lcp = lcp[0];
   assert (prev_lcp == 0);
   for (size_t i=1; i <= lcp.size(); ++i) {
     size_t cur_lcp = i < lcp.size() ? lcp[i] : 0;
 
-    if (cur_lcp >= prev_lcp) {
-      for (size_t j=prev_lcp + 1; j <= cur_lcp; ++j) {
-        prev_ind.push({i});
-      }
+    if (cur_lcp > prev_lcp) {
+      // at index i, islands for lengths [prev_lcp+1, ..., cur_lcp] begins
+      prev_ind.push({prev_lcp + 1, cur_lcp, i});
     } else {
-      while (prev_ind.size() > cur_lcp) {
-        auto ind = prev_ind.top();
+      while (!prev_ind.empty() && get<1>(prev_ind.top()) > cur_lcp) {
+        auto [start, end, ind] = prev_ind.top();
+        prev_ind.pop();
         
         size_t n1 = cnt1[i + 1] - cnt1[ind],
                n2 = cnt2[i + 1] - cnt2[ind],
                n3 = cnt3[i + 1] - cnt3[ind];
-        result[prev_ind.size()] = (result[prev_ind.size()]+n1*n2*n3) % MOD;
-        prev_ind.pop();
+
+        for (size_t lcpupd = max(cur_lcp + 1, start); lcpupd <= end; ++lcpupd) {
+          result[lcpupd] = (result[lcpupd] + n1 * n2 * n3) % MOD;
+        }
+
+        if (cur_lcp >= start) {
+          prev_ind.push({start, cur_lcp, ind});
+        }
       }
     }
 
