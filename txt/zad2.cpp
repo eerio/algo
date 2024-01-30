@@ -88,61 +88,34 @@ vector<size_t> get_suffix_array_brut(const string& s) {
   return result;
 }
 
-
-vector<int> sort_cyclic_shifts(string const& s) {
+vector<int> get_suffix_array(const string& s)
+{
     int n = s.size();
-    const int alphabet = 256;
-    vector<int> p(n), c(n), cnt(max(alphabet, n), 0);
-    for (int i = 0; i < n; i++)
-        cnt[s[i]]++;
-    for (int i = 1; i < alphabet; i++)
-        cnt[i] += cnt[i-1];
-    for (int i = 0; i < n; i++)
-        p[--cnt[s[i]]] = i;
-    c[p[0]] = 0;
-    int classes = 1;
-    for (int i = 1; i < n; i++) {
-        if (s[p[i]] != s[p[i-1]])
-            classes++;
-        c[p[i]] = classes - 1;
+    vector<int> sa(n), rank(n);
+    for (int i = 0; i < n; i++) {
+      rank[i] = s[i];
+      sa[i] = i;
     }
-    vector<int> pn(n), cn(n);
-    for (int h = 0; (1 << h) < n; ++h) {
-        for (int i = 0; i < n; i++) {
-            pn[i] = p[i] - (1 << h);
-            if (pn[i] < 0)
-                pn[i] += n;
+
+    for(int k = 0; k < n; k ? k *= 2 : k = 1)
+    {
+        sort(sa.begin(), sa.end(), [&](int i, int j)
+             {
+                 if (rank[i] == rank[j])
+                    return rank[(i + k) % n] < rank[(j + k) % n];
+                 return rank[i] < rank[j];
+             });
+        vector<int> nrank(n);
+        int r = 0;
+        for(int i = 1; i < n; i++)
+        {
+            if(rank[sa[i]] != rank[sa[i - 1]]) r++;
+            else if(rank[(sa[i] + k) % n] != rank[(sa[i - 1] + k) % n]) r++;
+            nrank[sa[i]] = r;
         }
-        fill(cnt.begin(), cnt.begin() + classes, 0);
-        for (int i = 0; i < n; i++)
-            cnt[c[pn[i]]]++;
-        for (int i = 1; i < classes; i++)
-            cnt[i] += cnt[i-1];
-        for (int i = n-1; i >= 0; i--)
-            p[--cnt[c[pn[i]]]] = pn[i];
-        cn[p[0]] = 0;
-        classes = 1;
-        for (int i = 1; i < n; i++) {
-            pair<int, int> cur = {c[p[i]], c[(p[i] + (1 << h)) % n]};
-            pair<int, int> prev = {c[p[i-1]], c[(p[i-1] + (1 << h)) % n]};
-            if (cur != prev)
-                ++classes;
-            cn[p[i]] = classes - 1;
-        }
-        c.swap(cn);
+        rank = nrank;
     }
-    return p;
-}
-
-vector<int> get_suffix_array2(const string& s) {
-  vector<int> sorted_shifts = sort_cyclic_shifts(s);
-  //sorted_shifts.erase(sorted_shifts.begin());
-  return sorted_shifts;
-}
-
-
-vector<int> get_suffix_array(const string& s) {
-  return get_suffix_array2(s);
+    return sa;
 }
 
 vector<size_t> get_lcp_array_brut(const string& s, const vector<int>& sa) {
@@ -219,11 +192,33 @@ int main() {
 
   size_t end1 = s1.size();
   size_t end2 = end1 + 1 + s2.size();
+  size_t end3 = end2 + 1 + s3.size();
   //println("end1:", end1, "end2:", end2);
 
-  //println(sa);
-  //println(lcp);
-
+  // cnti[j]: number of occurences of some suffixes of string i on sa[0:j)
+  vector<size_t> cnt1={0}, cnt2={0}, cnt3={0};
+  cnt1.reserve(sa.size() + 1);
+  cnt2.reserve(sa.size() + 1);
+  cnt3.reserve(sa.size() + 1);
+  size_t n1=0, n2=0, n3=0;
+  for (size_t i=0; i < sa.size(); ++i) {
+    if (sa[i] < end1) {
+      ++n1;
+    } else if (end1 < sa[i] && sa[i] < end2) {
+      ++n2;
+    } else if (end2 < sa[i] && sa[i] < end3) {
+      ++n3;
+    }
+    cnt1.push_back(n1);
+    cnt2.push_back(n2);
+    cnt3.push_back(n3);
+  }
+/*
+  println(sa);
+  println(cnt1);
+  println(cnt2);
+  println(cnt3);
+*/
   for (size_t L=1; L <= min_size; ++L) {
     size_t l=0, r=0, result=0;
     while (l < lcp.size()) {
@@ -232,23 +227,8 @@ int main() {
       r = l;
       while (r < lcp.size() && lcp[r] >= L) { ++r; }
       // lcp[l, r) is a valid range
-      //println("Found range for L =", L, ":", l, r);
-
-      size_t n1=0, n2=0, n3=0;
-      for (size_t i=l; i <= r; ++i) {
-        //println("sa[i]=", sa[i]);
-        if (sa[i] < end1) {
-          //println("s1");
-          ++n1;
-        } else if (end1 < sa[i] && sa[i] < end2) {
-          //println("s2");
-          ++n2;
-        } else if (end2 < sa[i]) {
-          //println("s3");
-          ++n3;
-        }
-      }
-
+      
+      size_t n1=cnt1[r + 1]-cnt1[l], n2=cnt2[r+1]-cnt2[l], n3=cnt3[r+1]-cnt3[l];
       result = (result + n1 * n2 * n3) % MOD;
 
       l = r;
