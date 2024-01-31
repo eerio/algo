@@ -77,6 +77,7 @@ using ull = unsigned long long int;
 //int randint(int l, int r) { uniform_int_distribution<int> dist (l, r); return dist(mt); }
 
 
+#define size_t unsigned long long int
 
 vector<size_t> get_suffix_array_brut(const string& s) {
   vector<pair<string, size_t>> suffixes;
@@ -280,7 +281,7 @@ int main() {
   */
 
 
-  size_t MOD = 1000000007;
+  long long int MOD = 1000000007;
 
   size_t end1 = s1.size();
   size_t end2 = end1 + 1 + s2.size();
@@ -306,7 +307,7 @@ int main() {
     cnt3.push_back(n3);
   }
 
-  vector<size_t> result (min_size + 1);
+  vector<long long int> result (min_size + 1);
 
   stack<tuple<size_t, size_t, size_t>> prev_ind;
   size_t prev_lcp = lcp[0];
@@ -322,12 +323,33 @@ int main() {
         auto [start, end, ind] = prev_ind.top();
         prev_ind.pop();
         
-        size_t n1 = cnt1[i + 1] - cnt1[ind],
+        long long int n1 = cnt1[i + 1] - cnt1[ind],
                n2 = cnt2[i + 1] - cnt2[ind],
                n3 = cnt3[i + 1] - cnt3[ind];
 
+       /* 
         for (size_t lcpupd = max(cur_lcp + 1, start); lcpupd <= end; ++lcpupd) {
-          result[lcpupd] = (result[lcpupd] + (((n1 * n2) % MOD) * n3) % MOD) % MOD;
+          result[lcpupd] = (result[lcpupd] + n1 * n2 * n3) % MOD;
+        }
+        */
+        
+
+        size_t lcpupd = max(cur_lcp + 1, start);
+        unsigned long long int upp = (n1 * n2 * n3) % MOD;
+        //result[lcpupd] = (result[lcpupd] + n1 * n2 * n3) % MOD;
+
+        assert (-MOD < result[lcpupd] && result[lcpupd] < MOD);
+        result[lcpupd] += upp;
+        if( result[lcpupd] >= MOD) { result[lcpupd] -= MOD; }
+        assert (-MOD < result[lcpupd] && result[lcpupd] < MOD);
+
+        if (end + 1 < result.size()) {
+          lcpupd = end + 1;
+          //result[lcpupd] -= upp;
+          assert (-MOD < result[lcpupd] && result[lcpupd] < MOD);
+          result[lcpupd] -= upp;
+          if (result[lcpupd] <= -MOD) { result[lcpupd] += MOD; }
+          assert (-MOD < result[lcpupd] && result[lcpupd] < MOD);
         }
 
         if (cur_lcp >= start) {
@@ -337,6 +359,13 @@ int main() {
     }
 
     prev_lcp = cur_lcp;
+  }
+
+  result[0] = 0;
+  for (size_t i=1; i < result.size(); ++i) {
+    result[i] += MOD + MOD + result[i - 1];
+    assert (result[i] >= 0);
+    result[i] %= MOD;
   }
 
   print(result[1]);
