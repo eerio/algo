@@ -32,7 +32,16 @@ def brut(inp):
             ret += ' ' + str(cnt)
     return ret + '\n'
 
+import os
+from tqdm import tqdm
+for i in tqdm(range(50000)):
+    inp = gen(100000, 100000, 100000, B, B, B)
+    with open(f'tests/small/test_BIG_{i}.in', 'w+') as doc:
+        doc.write(inp)
+    os.system(f'cat tests/small/test_BIG_{i}.in | ./dobrewolne.out > tests/small/test_BIG_{i}.out')
 
+import sys
+sys.exit()
 for i in range(1, 100):
     inp = gen(1, 1, 1, A, A, A)
     with open(f'tests/small/test_1_{i}.in', 'w+') as doc:

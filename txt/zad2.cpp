@@ -111,6 +111,8 @@ vector<size_t> get_lcp_array_brut(const string& s, const vector<int>& sa) {
 
 vector<size_t> get_lcp_array(const string& s, const vector<int>& sa) {
     size_t n = s.size();
+    // use rank array to be able to move through
+    // lexicographically adjacent suffixes in the suffix array
     vector<size_t> rank(n);
     for (size_t i=0; i < n; ++i) { rank[sa[i]] = i; }
 
@@ -121,6 +123,10 @@ vector<size_t> get_lcp_array(const string& s, const vector<int>& sa) {
       auto iprim = sa[rank[i] - 1];
       while (s[i + k] == s[iprim + k]) { ++k; }
       lcp[rank[i] - 1] = k;
+      // since these are suffixes, and we just saw two adjacent suffixes
+      // with lengthy common prefix, we will have more adjacent
+      // entries in the suffix array representing the suffixes of these
+      // suffixes. and moving by 1 in a suffix decreases the lcp by <= 1.
       if (k) { --k; }
     }
     return lcp;
@@ -158,8 +164,12 @@ void radixPass(
 
 // find the suffix array SA of s[0..n-1] in {1..K}ˆn
 // require s[n]=s[n+1]=s[n+2]=0, n>=2
+// we need this because the triples have to be well-defined
 void suffixArray(const vector<int>& s, vector<int>& SA, size_t n, int K) {
   // Part 1: Partition the suffixes of s into three categories: S0, S1, S2
+  // for suffixes s_i starting at i == 0, 1, 2 (mod 3) respectively.
+  // then compute rank array R12 for suffixes starting at i neq 0 mod 3.
+
   // sizes of the partitions S0, S1, S2
   size_t n0 = (n + 2) / 3;
   size_t n1 = (n + 1) / 3;
@@ -174,7 +184,7 @@ void suffixArray(const vector<int>& s, vector<int>& SA, size_t n, int K) {
   vector<int> SA12 (n02 + 3);
   SA12[n02] = SA12[n02 + 1] = SA12[n02 + 2] = 0;
 
-  // Construct a new string s12 to sort the sample suffixes
+  // Construct a new string s12 to sort the suffixes of S1, S2
   for (size_t s_pos=0, s12_pos=0; s_pos < (n % 3 == 1 ? n + 1 : n); ++s_pos) {
     if (s_pos % 3 != 0) {
       s12[s12_pos++] = s_pos;
@@ -190,9 +200,14 @@ void suffixArray(const vector<int>& s, vector<int>& SA, size_t n, int K) {
   radixPass(SA12, s12 , s, 1, n02, K);
   radixPass(s12,  SA12, s, 0, n02, K);
 
+  // Problem: the alphabet of triples grows exponentially
+  // with recursive calls.
+  // Solution: sort all triples, replace them with their ranks
+
   // Rename the triples with their ranks to obtain a new string
   int name = 0, c0 = -1, c1 = -1, c2 = -1;
   for (size_t i = 0; i < n02; ++i) {
+    // if the triple is the same as previously, use the same name
     if (s[SA12[i]] != c0 || s[SA12[i] + 1] != c1 || s[SA12[i] + 2] != c2) {
       ++name;
       c0 = s[SA12[i]];
@@ -202,36 +217,76 @@ void suffixArray(const vector<int>& s, vector<int>& SA, size_t n, int K) {
     if (SA12[i] % 3 == 1) { s12[SA12[i] / 3] = name; } // left half
     else { s12[SA12[i] / 3 + n0] = name; } // right half
   }
-  // If any of the characters of s12 are the same, recursively sort
-  // the suffixes of SA12
+  // now s12 = t1t2, concatenation of strings t1 t2 of triple names
+  // with t1 = triples of pos = 1 mod 3, t2 = triples of pos = 2 mod 3
+
+  // recursively sort the suffixes of s12
+  // if all the triple names are unique, no need for recursive call
   if (name < n02) {
     suffixArray(s12, SA12, n02, name);
-  // store unique names in s12 using the suffix array
-  for (int i = 0; i < n02; i++) s12[SA12[i]] = i + 1;
-  } else // generate the suffix array of s12 directly
-  for (int i = 0; i < n02; i++) SA12[s12[i] - 1] = i;
-  // stably sort the mod 0 suffixes from SA12 by their first character
-  for (int i=0, j=0; i < n02; i++) if (SA12[i] < n0) s0[j++] = 3*SA12[i];
-  radixPass(s0, SA0, s, 0, n0, K);
-  // merge sorted SA0 suffixes and sorted SA12 suffixes
-  for (int p=0, t=n0-n1, k=0; k < n; k++) {
+    // store unique names in s12 using the suffix array
+    for (int i = 0; i < n02; i++) {
+      s12[SA12[i]] = i + 1;
+    }
+  } else {
+    // generate the suffix array of s12 directly
+    for (int i = 0; i < n02; i++) SA12[s12[i] - 1] = i;
+
+    // stably sort the mod 0 suffixes from SA12 by their first character
+    // suffixes starting at j in t2 start at i = j+n0 in SA12 now.
+    // and they correspond 1-1 to suffixes starting at 2+3j = 2 + 3(i - n0)
+    // suffixes starting at j in t1 are 1-1 with suf. at 1+3i in `s`.
+    for (int i=0, j=0; i < n02; i++) {
+      if (SA12[i] < n0) {
+        s0[j++] = 3*SA12[i];
+      }
+    }
+
+    // now we have suffix array for S12 in s0.
+    
+
+    // obtain order of suffixes of S0 from order of S12.
+    // to compare s_0 and s_3, after removing fist characters we
+    // obtain s_1 and s_4. so we can compare *pair* of:
+    // (s_0[0], s_1), (s_3[0], s_4)
+    // and we know already the orded of the second parts from
+    // the R12 rank array
+    radixPass(s0, SA0, s, 0, n0, K);
+
+    // merge sorted SA0 suffixes and sorted SA12 suffixes
+    for (int p=0, t=n0-n1, k=0; k < n; k++) {
 #define GetI() (SA12[t] < n0 ? SA12[t]*3+1: (SA12[t] - n0) * 3 + 2)
-  int i = GetI(); // pos of current offset 12 suffix
-  int j = SA0[p]; // pos of current offset 0 suffix
-  if (SA12[t] < n0 ? // different compares for mod 1 and mod 2 suffixes
-  leq(s[i], s12[SA12[t] + n0], s[j], s12[j/3]) :
-  leq(s[i],s[i+1],s12[SA12[t]-n0+1], s[j],s[j+1],s12[j/3+n0]))
-  {// suffix from SA12 is smaller
-  SA[k] = i; t++;
-  if (t == n02) // done --- only SA0 suffixes left
-  for (k++; p < n0; p++, k++) SA[k] = SA0[p];
-  } else {// suffix from SA0 is smaller
-  SA[k] = j; p++;
-  if (p == n0) // done --- only SA12 suffixes left
-  for (k++; t < n02; t++, k++) SA[k] = GetI();
-  }
+      int i = GetI(); // pos of current offset 12 suffix
+      int j = SA0[p]; // pos of current offset 0 suffix
+
+      // important: we always have to cut either 1 or 2 characters
+      // from the beginning of the suffixes to them both end up
+      // in the S12 set, which order we already know
+
+      if (SA12[t] < n0 ? // different compares for mod 1 and mod 2 suffixes
+        leq(s[i], s12[SA12[t] + n0], s[j], s12[j/3]) :
+        leq(s[i],s[i+1],s12[SA12[t]-n0+1], s[j],s[j+1],s12[j/3+n0])) 
+      {
+        // suffix from SA12 is smaller
+        SA[k] = i;
+        t++;
+        if (t == n02) {
+          // done --- only SA0 suffixes left
+          for (k++; p < n0; p++, k++) SA[k] = SA0[p];
+        }
+      } else {
+        // suffix from SA0 is smaller
+        SA[k] = j;
+        p++;
+        if (p == n0) {
+          // done --- only SA12 suffixes left
+          for (k++; t < n02; t++, k++) { SA[k] = GetI(); }
+        }
+      }
+    }
   }
 }
+
 
 
 vector<int> get_suffix_array(const string &s) {

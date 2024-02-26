@@ -6,7 +6,7 @@ import tqdm
 
 p = Path('tests/small')
 
-for file in tqdm.tqdm(p.glob('**/*.out')):
+for file in tqdm.tqdm(p.glob('**/*BIG*.out')):
     inp = file.with_suffix('.in')
     out = file.with_suffix('.cppout')
     os.system(f'cat {inp} | ./a.out > {out}')
@@ -20,7 +20,7 @@ for file in tqdm.tqdm(p.glob('**/*.out')):
         print()
         with open(inp) as doc:
             inpp = doc.read()
-        print('Input:', inpp)
-        print('Python:', repr(pyout))
-        print('Cpp:', repr(cppout))
+        #print('Input:', inpp)
+        #print('Python:', repr(pyout))
+        print('Cpp:', repr(cppout)[:300])
         raise Exception('Invalid!')
